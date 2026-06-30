@@ -6,8 +6,8 @@
   <title>Cronocuerda — Afinador + Metrónomo</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1120">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192x192.png">
+  <link rel="apple-touch-icon" href="icon-192x192.png">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -1314,7 +1314,7 @@ function getPitch(buf, sampleRate){
   let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i];
   rms = Math.sqrt(rms/N);
   lastRMS = rms;
-  if(rms<0.003) return null; // umbral bajado de 0.01 a 0.003
+  if(rms<0.001) return null; // umbral muy permisivo para celular
   const minLag=Math.floor(sampleRate/1500);
   const maxLag=Math.floor(sampleRate/38);
   let bestNSDF=-Infinity, bestLag=-1;
@@ -1329,7 +1329,7 @@ function getPitch(buf, sampleRate){
   for(let lag=minLag;lag<=maxLag;lag++){
     const v=nsdf(lag); if(v>bestNSDF){bestNSDF=v;bestLag=lag;}
   }
-  if(bestNSDF<0.45||bestLag<0) return null;
+  if(bestNSDF<0.25||bestLag<0) return null;
   const y0=bestLag>minLag?nsdf(bestLag-1):bestNSDF;
   const y2=bestLag<maxLag?nsdf(bestLag+1):bestNSDF;
   const d=y0-2*bestNSDF+y2;
@@ -1350,7 +1350,7 @@ async function initMic(){
       audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
     });
     const src=tunerCtx.createMediaStreamSource(stream);
-    analyser=tunerCtx.createAnalyser(); analyser.fftSize=4096;
+    analyser=tunerCtx.createAnalyser(); analyser.fftSize=8192;
     src.connect(analyser);
     if(tunerCtx.state==='suspended') await tunerCtx.resume();
     micIsActive=true;

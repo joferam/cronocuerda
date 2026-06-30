@@ -8,16 +8,16 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './icons/icon-48x48.png',
-  './icons/icon-72x72.png',
-  './icons/icon-96x96.png',
-  './icons/icon-128x128.png',
-  './icons/icon-144x144.png',
-  './icons/icon-152x152.png',
-  './icons/icon-192x192.png',
-  './icons/icon-256x256.png',
-  './icons/icon-384x384.png',
-  './icons/icon-512x512.png'
+  './icon-48x48.png',
+  './icon-72x72.png',
+  './icon-96x96.png',
+  './icon-128x128.png',
+  './icon-144x144.png',
+  './icon-152x152.png',
+  './icon-192x192.png',
+  './icon-256x256.png',
+  './icon-384x384.png',
+  './icon-512x512.png'
 ];
 
 // Instalación: guarda los archivos del app shell en caché

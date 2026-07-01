@@ -205,6 +205,61 @@
       color:#000; font-weight:700; box-shadow:0 0 8px var(--green);
     }
 
+    /* ── CHECKLIST DE CUERDAS ── */
+    .string-checklist {
+      background:var(--card); border-radius:28px;
+      padding:14px; margin-bottom:12px;
+    }
+    .checklist-header {
+      display:flex; justify-content:space-between;
+      align-items:center; margin-bottom:8px;
+    }
+    .checklist-header span {
+      font-size:10px; font-weight:700;
+      color:var(--muted); letter-spacing:1.5px;
+      text-transform:uppercase;
+    }
+    .checklist-reset {
+      background:transparent; border:none;
+      color:var(--muted); font-size:9px;
+      cursor:pointer; text-decoration:underline;
+      font-family:var(--sans);
+    }
+    .checklist-direction {
+      font-size:9px; color:var(--muted);
+      text-align:center; margin-bottom:10px;
+      letter-spacing:0.5px;
+    }
+    .checklist-strings { display:flex; flex-direction:column; gap:6px; }
+    .checklist-row {
+      display:flex; align-items:center; gap:10px;
+      background:var(--card2); border-radius:16px;
+      padding:8px 12px; border:1.5px solid var(--border);
+      transition:all 0.25s;
+    }
+    .checklist-row.tuned   { background:#1a4a30; border-color:var(--green); }
+    .checklist-row.active-str { border-color:var(--accent); background:#2a1a28; }
+    .checklist-num {
+      font-size:10px; font-weight:700; color:var(--muted);
+      font-family:var(--mono); min-width:18px; text-align:center;
+    }
+    .checklist-row.tuned .checklist-num    { color:var(--green); }
+    .checklist-row.active-str .checklist-num { color:var(--accent); }
+    .checklist-note {
+      font-size:16px; font-weight:700; color:var(--text);
+      font-family:var(--mono); min-width:36px;
+    }
+    .checklist-row.tuned .checklist-note    { color:var(--green); }
+    .checklist-row.active-str .checklist-note { color:var(--accent); }
+    .checklist-label { flex:1; font-size:10px; color:var(--muted); }
+    .checklist-cents {
+      font-size:10px; font-family:var(--mono);
+      color:var(--muted); min-width:44px; text-align:right;
+    }
+    .checklist-row.tuned .checklist-cents    { color:var(--green); }
+    .checklist-row.active-str .checklist-cents { color:var(--accent); }
+    .checklist-icon { font-size:16px; min-width:20px; text-align:center; }
+
     .history-section {
       background:var(--card); border-radius:28px;
       padding:12px; margin-bottom:12px;
@@ -593,14 +648,14 @@
         <div class="string-pills" id="stringPills"></div>
       </div>
 
-      <div class="history-section">
-        <div class="history-header">
-          <span id="historyLabel">📋 HISTORIAL DE AFINACIÓN</span>
-          <button class="history-clear" id="historyClearBtn">Limpiar</button>
+      <!-- CHECKLIST DE CUERDAS — reemplaza el historial -->
+      <div class="string-checklist">
+        <div class="checklist-header">
+          <span id="checklistLabel">🎯 ESTADO DE AFINACIÓN</span>
+          <button class="checklist-reset" id="checklistResetBtn">Reiniciar</button>
         </div>
-        <div class="history-list" id="historyList">
-          <span style="font-size:10px;color:var(--muted)">Esperando notas...</span>
-        </div>
+        <p class="checklist-direction" id="checklistDirection">← grave · aguda →</p>
+        <div class="checklist-strings" id="checklistStrings"></div>
       </div>
 
       <div class="ref-sound-section">
@@ -687,6 +742,9 @@ const T = {
     historyLabel:'📋 HISTORIAL DE AFINACIÓN',
     historyClear:'Limpiar',
     historyEmpty:'Esperando notas...',
+    checklistLabel:     '🎯 ESTADO DE AFINACIÓN',
+    checklistReset:     'Reiniciar',
+    checklistDirection: '← grave · aguda →',
     wakeNormal:'🔋 pantalla: normal',
     wakeActive:'🔋 pantalla: siempre encendida ✅',
     wakeUnsupported:'🔋 wake lock no disponible',
@@ -722,6 +780,9 @@ const T = {
     historyLabel:'📋 TUNING HISTORY',
     historyClear:'Clear',
     historyEmpty:'Waiting for notes...',
+    checklistLabel:     '🎯 TUNING STATUS',
+    checklistReset:     'Reset',
+    checklistDirection: '← low · high →',
     wakeNormal:'🔋 screen: normal',
     wakeActive:'🔋 screen: always on ✅',
     wakeUnsupported:'🔋 wake lock unavailable',
@@ -757,6 +818,9 @@ const T = {
     historyLabel:'📋 HISTORIQUE D\'ACCORDAGE',
     historyClear:'Effacer',
     historyEmpty:'En attente des notes...',
+    checklistLabel:     '🎯 ÉTAT D'ACCORDAGE',
+    checklistReset:     'Réinitialiser',
+    checklistDirection: '← grave · aigu →',
     wakeNormal:'🔋 écran: normal',
     wakeActive:'🔋 écran: toujours allumé ✅',
     wakeUnsupported:'🔋 wake lock non disponible',
@@ -792,6 +856,9 @@ const T = {
     historyLabel:'📋 HISTÓRICO DE AFINAÇÃO',
     historyClear:'Limpar',
     historyEmpty:'Aguardando notas...',
+    checklistLabel:     '🎯 STATUS DE AFINAÇÃO',
+    checklistReset:     'Reiniciar',
+    checklistDirection: '← grave · aguda →',
     wakeNormal:'🔋 tela: normal',
     wakeActive:'🔋 tela: sempre ligada ✅',
     wakeUnsupported:'🔋 wake lock indisponível',
@@ -906,8 +973,12 @@ function applyLang(){
   document.getElementById('metroStop').textContent    = tx.metroStop;
   document.getElementById('metroStart').textContent   = tx.metroStart;
   document.getElementById('footerTxt').textContent    = tx.footerTxt;
-  document.getElementById('historyLabel').innerHTML   = tx.historyLabel;
-  document.getElementById('historyClearBtn').textContent = tx.historyClear;
+  const clEl = document.getElementById('checklistLabel');
+  if(clEl) clEl.textContent = tx.checklistLabel || '🎯 ESTADO DE AFINACIÓN';
+  const crEl = document.getElementById('checklistResetBtn');
+  if(crEl) crEl.textContent = tx.checklistReset || 'Reiniciar';
+  const cdEl = document.getElementById('checklistDirection');
+  if(cdEl) cdEl.textContent = tx.checklistDirection || '← grave · aguda →';
   document.getElementById('tutT1').innerHTML   = tx.tut.t1;
   document.getElementById('tutP1').textContent = tx.tut.p1;
   document.getElementById('tutT2').innerHTML   = tx.tut.t2;
@@ -936,58 +1007,93 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
   });
 });
 
-/* ── HISTORIAL ── */
-let tuningHistory  = [];
-let stabilityNote  = '';
-let stabilityTimer = null;
-let lastAddedNote  = '';
-let lastAddedTime  = 0;
-const STABILITY_MS = 350;
-const MIN_GAP_MS   = 1500;
+/* ── CHECKLIST DE CUERDAS ── */
+const INSTR_LABELS = {
+  guitar:     ['6ª · grave','5ª','4ª','3ª','2ª','1ª · aguda'],
+  bass:       ['4ª · grave','3ª','2ª','1ª · aguda'],
+  ukelele:    ['4ª','3ª','2ª','1ª · aguda'],
+  charango:   ['5ª · grave','4ª','3ª','2ª','1ª · aguda'],
+  cuatro:     ['4ª · grave','3ª','2ª','1ª · aguda'],
+  banjo:      ['5ª (drone)','4ª · grave','3ª','2ª','1ª · aguda'],
+  bandola:    ['4ª · grave','3ª','2ª','1ª · aguda'],
+  cavaquinho: ['4ª · grave','3ª','2ª','1ª · aguda'],
+  violin:     ['4ª · grave','3ª','2ª','1ª · aguda'],
+};
 
-function onStableNote(note, cents){
-  const now = Date.now();
-  if(note === lastAddedNote && (now - lastAddedTime) < MIN_GAP_MS) return;
-  lastAddedNote = note;
-  lastAddedTime = now;
-  tuningHistory.unshift({ note, cents });
-  if(tuningHistory.length > 10) tuningHistory.pop();
-  updateHistoryDisplay();
-  if(Math.abs(cents) <= 5) triggerPerfectFeedback();
-}
+let stringStatus = [];
 
-function triggerPerfectFeedback(){
-  const container = document.getElementById('needleContainer');
-  container.classList.add('perfect');
-  setTimeout(()=>container.classList.remove('perfect'), 600);
-  const noteEl = document.getElementById('detectedNote');
-  noteEl.classList.add('perfect');
-  setTimeout(()=>noteEl.classList.remove('perfect'), 600);
-  if(navigator.vibrate) navigator.vibrate([40, 30, 40]);
-}
-
-function updateHistoryDisplay(){
-  const el = document.getElementById('historyList');
-  const tx = T[lang];
-  if(tuningHistory.length === 0){
-    el.innerHTML = `<span style="font-size:10px;color:var(--muted)">${tx.historyEmpty}</span>`;
-    return;
-  }
+function buildChecklist(){
+  const el = document.getElementById('checklistStrings');
+  if(!el) return;
   el.innerHTML = '';
-  tuningHistory.forEach(item=>{
-    const badge = document.createElement('div');
-    const good  = Math.abs(item.cents) <= 5;
-    badge.className = `history-badge ${good?'good':'off'}`;
-    badge.innerHTML = `${item.note}&thinsp;<span style="font-size:9px">${item.cents>=0?'+':''}${item.cents}¢</span>`;
-    el.appendChild(badge);
+  const names  = INSTR_NAMES[instrument];
+  const labels = INSTR_LABELS[instrument] || [];
+  stringStatus = names.map(()=>({ tuned:false, cents:null, active:false }));
+  names.forEach((name,i)=>{
+    const row = document.createElement('div');
+    row.className = 'checklist-row';
+    row.id = 'crow-'+i;
+    row.innerHTML =
+      '<span class="checklist-num">'+(i+1)+'</span>'+
+      '<span class="checklist-note">'+name+'</span>'+
+      '<span class="checklist-label">'+(labels[i]||'')+'</span>'+
+      '<span class="checklist-cents" id="ccents-'+i+'">—</span>'+
+      '<span class="checklist-icon" id="cicon-'+i+'">○</span>';
+    el.appendChild(row);
   });
 }
 
-document.getElementById('historyClearBtn').addEventListener('click',()=>{
-  tuningHistory = [];
-  lastAddedNote = '';
-  updateHistoryDisplay();
-});
+function updateChecklist(detectedFreq, cents){
+  if(!detectedFreq){
+    stringStatus.forEach((s,i)=>{
+      s.active=false;
+      const row=document.getElementById('crow-'+i);
+      if(row) row.className='checklist-row'+(s.tuned?' tuned':'');
+    });
+    return;
+  }
+  const freqs=INSTR_FREQS[instrument];
+  let minC=Infinity, nearestIdx=-1;
+  freqs.forEach((f,i)=>{ const c=Math.abs(1200*Math.log2(detectedFreq/f)); if(c<minC){minC=c;nearestIdx=i;} });
+  if(nearestIdx<0||minC>200) return;
+  const wasTuned = stringStatus[nearestIdx] && stringStatus[nearestIdx].tuned;
+  stringStatus.forEach((s,i)=>{
+    s.active=(i===nearestIdx);
+    if(s.active){ s.cents=cents; if(Math.abs(cents)<=5) s.tuned=true; }
+  });
+  stringStatus.forEach((s,i)=>{
+    const row=document.getElementById('crow-'+i);
+    const cEl=document.getElementById('ccents-'+i);
+    const iEl=document.getElementById('cicon-'+i);
+    if(!row) return;
+    if(s.active){
+      row.className='checklist-row active-str';
+      cEl.textContent=(cents>=0?'+':'')+cents+'¢';
+      iEl.textContent=Math.abs(cents)<=5?'✅':(cents>0?'▲':'▼');
+    } else if(s.tuned){
+      row.className='checklist-row tuned';
+      cEl.textContent=(s.cents>=0?'+':'')+s.cents+'¢';
+      iEl.textContent='✅';
+    } else {
+      row.className='checklist-row';
+      cEl.textContent='—';
+      iEl.textContent='○';
+    }
+  });
+  if(Math.abs(cents)<=5 && !wasTuned) triggerPerfectFeedback();
+}
+
+function triggerPerfectFeedback(){
+  const container=document.getElementById('needleContainer');
+  container.classList.add('perfect');
+  setTimeout(()=>container.classList.remove('perfect'),600);
+  const noteEl=document.getElementById('detectedNote');
+  noteEl.classList.add('perfect');
+  setTimeout(()=>noteEl.classList.remove('perfect'),600);
+  if(navigator.vibrate) navigator.vibrate([40,30,40]);
+}
+
+document.getElementById('checklistResetBtn').addEventListener('click',()=>{ buildChecklist(); });
 
 /* ── INSTRUMENTOS ── */
 const INSTR_LIST = [
@@ -1058,6 +1164,8 @@ function buildInstrumentGrid(){
       stopSound();
       buildPills();
       buildRefBtns();
+      buildChecklist();
+      freqHistory = [];
     });
     grid.appendChild(card);
   });
@@ -1307,7 +1415,24 @@ function noteFromFreq(freq){
   return{ note:NOTE_NAMES[ni]+Math.floor(h/12), cents };
 }
 
-let lastRMS = 0; // expuesto para el medidor de nivel (debug)
+let lastRMS    = 0;
+let freqHistory = []; // últimas lecturas para suavizado
+const SMOOTH_N  = 4;  // promedio de 4 frames
+
+function smoothedFreq(newFreq){
+  // Si hay lectura válida, agregar al buffer
+  if(newFreq !== null){
+    freqHistory.push(newFreq);
+    if(freqHistory.length > SMOOTH_N) freqHistory.shift();
+    // Retornar mediana del buffer para evitar lecturas espurias
+    const sorted = [...freqHistory].sort((a,b)=>a-b);
+    return sorted[Math.floor(sorted.length/2)];
+  } else {
+    // Sin señal: vaciar buffer gradualmente
+    if(freqHistory.length > 0) freqHistory.shift();
+    return freqHistory.length > 0 ? freqHistory[freqHistory.length-1] : null;
+  }
+}
 
 function getPitch(buf, sampleRate){
   const N=buf.length;
@@ -1369,13 +1494,8 @@ function startDetection(){
   function loop(){
     if(analyser&&tunerCtx&&tunerCtx.state==='running'){
       analyser.getFloatTimeDomainData(buf);
-      const freq=getPitch(buf,tunerCtx.sampleRate);
-
-      // Medidor de nivel — se actualiza siempre, detecte o no nota
-      const pct = Math.min(100, Math.round(lastRMS * 400)); // escala visual
-      levelBar.style.width = pct + '%';
-      levelValue.textContent = pct + '%';
-      levelBar.style.background = pct < 5 ? '#E74C3C' : (pct < 15 ? '#F1C40F' : '#2ECC71');
+      const rawFreq = getPitch(buf,tunerCtx.sampleRate);
+      const freq    = smoothedFreq(rawFreq); // suavizado temporal
 
       const needleEl=document.getElementById('needle');
       if(freq){
@@ -1387,12 +1507,7 @@ function startDetection(){
         needleEl.style.transform=`translateX(-50%) rotate(${rot}deg)`;
         needleEl.style.boxShadow=Math.abs(cents)<=5?'0 0 12px #2ECC71':'0 0 8px #E94560';
         highlightNearest(freq);
-        const key=note+'|'+cents;
-        if(key !== stabilityNote){
-          stabilityNote=key;
-          if(stabilityTimer){ clearTimeout(stabilityTimer); stabilityTimer=null; }
-          stabilityTimer=setTimeout(()=>{ onStableNote(note,cents); stabilityTimer=null; }, STABILITY_MS);
-        }
+        updateChecklist(freq, cents);
       } else {
         document.getElementById('detectedNote').textContent='--';
         document.getElementById('centsDisplay').textContent='-- cents';
@@ -1400,8 +1515,7 @@ function startDetection(){
         needleEl.style.transform='translateX(-50%) rotate(0deg)';
         needleEl.style.boxShadow='0 0 8px #E94560';
         document.querySelectorAll('.string-pill').forEach(p=>p.classList.remove('nearest'));
-        stabilityNote='';
-        if(stabilityTimer){ clearTimeout(stabilityTimer); stabilityTimer=null; }
+        updateChecklist(null, 0);
       }
     }
     rafId=requestAnimationFrame(loop);
@@ -1421,6 +1535,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 buildInstrumentGrid();
 buildPills();
 buildRefBtns();
+buildChecklist();
 applyLang();
 initMic();
 

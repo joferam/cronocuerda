@@ -1,13 +1,8 @@
-// Service Worker — Cronocuerda
-// Cachea el "app shell" (HTML, manifest, íconos) para que la app funcione offline
-// y cumpla el requisito de instalabilidad de Chrome/Android.
+// Service Worker — Cronocuerda v3
+// Estrategia: network-first para HTML (siempre fresco), cache-first para íconos
 
-const CACHE_NAME = 'cronocuerda-v2';
-
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
+const CACHE_NAME = 'cronocuerda-v3';
+const STATIC_ASSETS = [
   './icon-48x48.png',
   './icon-72x72.png',
   './icon-96x96.png',
@@ -17,55 +12,60 @@ const ASSETS_TO_CACHE = [
   './icon-192x192.png',
   './icon-256x256.png',
   './icon-384x384.png',
-  './icon-512x512.png'
+  './icon-512x512.png',
+  './manifest.json'
 ];
 
-// Instalación: guarda los archivos del app shell en caché
+// Instalación: cachea solo los íconos y manifest (NO el HTML)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .then(cache => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activación: limpia versiones de caché antiguas
+// Activación: limpia cachés viejos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch: estrategia "cache first, network fallback"
-// Sirve desde caché si existe; si no, va a la red y guarda la respuesta para la próxima vez
+// Fetch: network-first para HTML, cache-first para el resto
 self.addEventListener('fetch', (event) => {
-  // Solo interceptamos peticiones GET (evita problemas con otras solicitudes)
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        // Solo cacheamos respuestas válidas del mismo origen
-        if (networkResponse && networkResponse.status === 200 && event.request.url.startsWith(self.location.origin)) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Si falla todo (sin red y sin caché), no hay nada más que ofrecer
-        return cachedResponse;
-      });
-    })
-  );
+  const url = new URL(event.request.url);
+  const isHTML = event.request.destination === 'document' ||
+                 url.pathname.endsWith('.html') ||
+                 url.pathname.endsWith('/');
+
+  if (isHTML) {
+    // HTML: siempre intenta la red primero para tener la versión más reciente
+    event.respondWith(
+      fetch(event.request)
+        .then(networkRes => {
+          // Guarda una copia fresca en caché por si se va la red
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return networkRes;
+        })
+        .catch(() => caches.match(event.request)) // sin red: usa caché
+    );
+  } else {
+    // Íconos y otros estáticos: cache-first (raramente cambian)
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(networkRes => {
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return networkRes;
+        });
+      })
+    );
+  }
 });

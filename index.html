@@ -993,10 +993,10 @@ function applyLang(){
   // micStatus: solo actualizar si el mic NO está activo
   const ms = document.getElementById('micStatus');
   if(!micIsActive){ ms.textContent = tx.micWaiting; ms.style.color = ''; }
-  updateHistoryDisplay();
   buildInstrumentGrid();
   buildPills();
   buildRefBtns();
+  buildChecklist();
 }
 
 document.querySelectorAll('.lang-btn').forEach(btn=>{

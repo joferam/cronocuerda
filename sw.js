@@ -2,7 +2,7 @@
 // Cachea el "app shell" (HTML, manifest, íconos) para que la app funcione offline
 // y cumpla el requisito de instalabilidad de Chrome/Android.
 
-const CACHE_NAME = 'cronocuerda-v1';
+const CACHE_NAME = 'cronocuerda-v2';
 
 const ASSETS_TO_CACHE = [
   './',

@@ -1539,12 +1539,14 @@ buildChecklist();
 applyLang();
 initMic();
 
-// Registro del Service Worker — habilita instalación PWA y funcionamiento offline
+// Desregistrar todos los service workers existentes para limpiar caché viejo
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then((reg) => console.log('Service Worker registrado:', reg.scope))
-      .catch((err) => console.log('Error registrando Service Worker:', err));
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+  // Limpiar todos los cachés
+  caches.keys().then(keys => {
+    keys.forEach(key => caches.delete(key));
   });
 }
 </script>

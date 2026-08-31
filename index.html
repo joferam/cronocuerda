@@ -226,6 +226,16 @@
           <div class="frequency" id="frequency">-- Hz</div>
         </div>
         <div class="string-pills" id="stringPills"></div>
+        <!-- DIAGNÓSTICO TEMPORAL -->
+        <div id="diagBox" style="margin-top:10px;background:#0A0F1A;border-radius:12px;padding:8px 12px;">
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#6B7AA3;margin-bottom:4px;">
+            <span>NIVEL</span><span id="diagRMS">0.000</span>
+          </div>
+          <div style="background:#1A2540;border-radius:6px;height:6px;overflow:hidden;">
+            <div id="diagBar" style="height:100%;width:0%;background:#E94560;transition:width 0.05s;"></div>
+          </div>
+          <div style="font-size:9px;color:#6B7AA3;margin-top:4px;text-align:center" id="diagMsg">esperando señal...</div>
+        </div>
       </div>
 
       <div class="ref-sound-section">
@@ -810,7 +820,7 @@ function getPitch(buf,sampleRate){
   const N=buf.length;
   let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i];
   rms=Math.sqrt(rms/N);
-  if(rms<0.001) return null;  // umbral permisivo para móvil
+  if(rms<0.0008) return null;  // umbral muy permisivo para móvil
   const minLag=Math.floor(sampleRate/1500);
   const maxLag=Math.floor(sampleRate/38);
   let bestNSDF=-Infinity,bestLag=-1;
@@ -846,17 +856,15 @@ async function initMic(){
       audio:{
         echoCancellation:false,
         noiseSuppression:false,
-        autoGainControl:false,
-        channelCount:1,
-        latency:0
+        autoGainControl:false
       }
     });
     const src=tunerCtx.createMediaStreamSource(stream);
     analyser=tunerCtx.createAnalyser();
-    analyser.fftSize=8192;
+    analyser.fftSize=2048;
     analyser.minDecibels=-100;
     analyser.maxDecibels=-10;
-    analyser.smoothingTimeConstant=0.8;
+    analyser.smoothingTimeConstant=0.85;
     src.connect(analyser);
     if(tunerCtx.state==='suspended') await tunerCtx.resume();
     micIsActive=true;
@@ -873,6 +881,22 @@ function startDetection(){
   function loop(){
     if(analyser&&tunerCtx&&tunerCtx.state==='running'){
       analyser.getFloatTimeDomainData(buf);
+
+      // DIAGNÓSTICO VISIBLE
+      let rmsD=0; for(let i=0;i<buf.length;i++) rmsD+=buf[i]*buf[i];
+      rmsD=Math.sqrt(rmsD/buf.length);
+      const pctD=Math.min(100,Math.round(rmsD*500));
+      const diagBar=document.getElementById('diagBar');
+      const diagRMS=document.getElementById('diagRMS');
+      const diagMsg=document.getElementById('diagMsg');
+      if(diagBar){ diagBar.style.width=pctD+'%'; diagBar.style.background=pctD<2?'#E74C3C':pctD<8?'#F1C40F':'#2ECC71'; }
+      if(diagRMS) diagRMS.textContent=rmsD.toFixed(4);
+      if(diagMsg){
+        if(pctD<2) diagMsg.textContent='sin señal — toca más fuerte o acércate';
+        else if(pctD<8) diagMsg.textContent='señal débil — nivel: '+pctD+'%';
+        else diagMsg.textContent='señal OK — nivel: '+pctD+'%';
+      }
+
       const freq=getPitch(buf,tunerCtx.sampleRate);
       const needleEl=document.getElementById('needle');
       if(freq){

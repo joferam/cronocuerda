@@ -961,7 +961,7 @@ function getPitch(buf, sampleRate) {
   return (freq > 55 && freq < 1500) ? freq : null;
 }
 
-
+function startDetection(){
   const buf=new Float32Array(analyser.fftSize);
   function loop(){
     if(analyser&&tunerCtx&&tunerCtx.state==='running'){

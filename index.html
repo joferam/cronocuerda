@@ -911,7 +911,7 @@ function getPitch(buf, sampleRate) {
   if(rms < 0.0008) return null;
 
   const halfN = Math.floor(N / 2);
-  const threshold = 0.10; // threshold YIN recomendado por el paper
+  const threshold = 0.20; // umbral ajustado para móvil
 
   // Paso 1: Función de diferencia cuadrática
   const diff = new Float32Array(halfN);
@@ -945,7 +945,7 @@ function getPitch(buf, sampleRate) {
     }
     tau++;
   }
-  if(tau >= maxLag || cmnd[tau] >= 0.5) return null; // umbral de confianza
+  if(tau >= maxLag || cmnd[tau] >= 0.8) return null; // umbral de confianza
 
   // Paso 4: Interpolación parabólica para mayor precisión
   let refinedTau = tau;

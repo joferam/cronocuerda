@@ -876,7 +876,92 @@ async function initMic(){
   }
 }
 
-function startDetection(){
+/* SMOOTHING DE FRECUENCIA — EMA 60/40 como usan los afinadores profesionales */
+let smoothedFrequency = null;
+const EMA_ALPHA = 0.4; // peso de la nueva lectura (40%), 60% de la anterior
+
+function applyEMA(newFreq) {
+  if(newFreq === null) {
+    smoothedFrequency = null;
+    return null;
+  }
+  if(smoothedFrequency === null) {
+    smoothedFrequency = newFreq;
+    return newFreq;
+  }
+  // Corrección de octava antes del EMA
+  const ratio = newFreq / smoothedFrequency;
+  if(ratio > 1.8 && ratio < 2.2)      newFreq = newFreq / 2; // octava arriba
+  else if(ratio > 0.45 && ratio < 0.55) newFreq = newFreq * 2; // octava abajo
+  // EMA 60/40
+  smoothedFrequency = (1 - EMA_ALPHA) * smoothedFrequency + EMA_ALPHA * newFreq;
+  return smoothedFrequency;
+}
+
+/* ALGORITMO YIN — más preciso que NSDF para instrumentos de cuerda
+   Basado en: "YIN, a fundamental frequency estimator for speech and music"
+   Threshold 0.1 recomendado por el paper original */
+function getPitch(buf, sampleRate) {
+  const N = buf.length;
+
+  // Verificar energía mínima (RMS)
+  let rms = 0;
+  for(let i = 0; i < N; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / N);
+  if(rms < 0.0008) return null;
+
+  const halfN = Math.floor(N / 2);
+  const threshold = 0.10; // threshold YIN recomendado por el paper
+
+  // Paso 1: Función de diferencia cuadrática
+  const diff = new Float32Array(halfN);
+  for(let tau = 1; tau < halfN; tau++) {
+    let sum = 0;
+    for(let j = 0; j < halfN; j++) {
+      const delta = buf[j] - buf[j + tau];
+      sum += delta * delta;
+    }
+    diff[tau] = sum;
+  }
+
+  // Paso 2: Función de diferencia cuadrática media normalizada acumulada (CMND)
+  const cmnd = new Float32Array(halfN);
+  cmnd[0] = 1;
+  let runningSum = 0;
+  for(let tau = 1; tau < halfN; tau++) {
+    runningSum += diff[tau];
+    cmnd[tau] = runningSum === 0 ? 0 : diff[tau] * tau / runningSum;
+  }
+
+  // Paso 3: Umbral absoluto — encontrar el primer tau donde cmnd < threshold
+  const minLag = Math.floor(sampleRate / 1500); // ~1500 Hz máximo
+  const maxLag = Math.floor(sampleRate / 60);   // ~60 Hz mínimo (bajo eléctrico)
+  let tau = minLag;
+  while(tau < maxLag) {
+    if(cmnd[tau] < threshold) {
+      // Buscar mínimo local cerca
+      while(tau + 1 < maxLag && cmnd[tau + 1] < cmnd[tau]) tau++;
+      break;
+    }
+    tau++;
+  }
+  if(tau >= maxLag || cmnd[tau] >= 0.5) return null; // umbral de confianza
+
+  // Paso 4: Interpolación parabólica para mayor precisión
+  let refinedTau = tau;
+  if(tau > 0 && tau < halfN - 1) {
+    const s0 = cmnd[tau - 1];
+    const s1 = cmnd[tau];
+    const s2 = cmnd[tau + 1];
+    const denom = 2 * (2 * s1 - s2 - s0);
+    if(denom !== 0) refinedTau = tau + (s2 - s0) / denom;
+  }
+
+  const freq = sampleRate / refinedTau;
+  return (freq > 55 && freq < 1500) ? freq : null;
+}
+
+
   const buf=new Float32Array(analyser.fftSize);
   function loop(){
     if(analyser&&tunerCtx&&tunerCtx.state==='running'){
@@ -897,7 +982,8 @@ function startDetection(){
         else diagMsg.textContent='señal OK — nivel: '+pctD+'%';
       }
 
-      const freq=getPitch(buf,tunerCtx.sampleRate);
+      const rawFreq=getPitch(buf,tunerCtx.sampleRate);
+      const freq=applyEMA(rawFreq);
       const needleEl=document.getElementById('needle');
       if(freq){
         const{note,cents}=noteFromFreq(freq);
